@@ -1,0 +1,101 @@
+Shofiqur Rahman
+shofi384@gmail.com
+CCNY, Spring 2018
+
+Task # 6 Explanation
+
+
+Initially, four pthread_mutex_t mutexes are declared and initailized. They are; 
+	lockMutex: It confirms atomicity of the critical section codes both in agent thread and smoker threads
+	matchMutex, paperMutex, tobaccoMutex: These mutexes are used to synchronize among smoker threads and the agent thread. 
+		It is used to send and receive signal from each smoker threads and agent thread
+
+
+
+agentRunner() is activated when agent thread is created. agent thread will activate this function by default	two variables are used to run limited number of iterations; countProduce, maxProduceTimes	while(countProduce < maxProduceTimes) {
+		pthread_mutex_lock(&lockMutex);	//acquire lock to perform the following task atomically
+
+		// random number to decide what ingredients to put on the table		randNumber = rand() % 3;	//this random number generator decides what ingredients to be put on the table
+		if(randNumber == 0) {	//depending on the random number generated, appropriate smoker thread is waken
+			pthread_mutex_unlock(&matchMutex);	// random number==0, means signaling the smoker thread with match to smoke
+							// random number==1, means signaling the smoker thread with paper to smoke
+							// random number==2, means signaling the smoker thread with tobacco to smoke
+			pthread_mutex_unlock(&paperMutex);	//releasing this lock means signaling the appropriate smoker to start smoking 
+		//this pattern repeats for maxProduceTimes
+
+
+
+void* matchRunner() is activated when smoker thread with match is created. appropriate smoker thread will activate this function by default	while(1) {
+		//Acquire matchMutex lock to recieve signal from agent thread to start smoking or in other words, put smoker thread to sleep
+		//At every iteration, smoker thread will fall asleep at this point
+		//the smoker thread will be sleeping untill agent thread awakens by unlocking the appropriate matchMutex
+		pthread_mutex_lock(&matchMutex);
+		pthread_mutex_lock(&lockMutex);	//acquire this lock to confirm atomicity and putting agent thread to sleep
+							It also prevents other smoker threads to run simultaneously
+		... ... ... critical section codes ... ... ...
+		pthread_mutex_unlock(&lockMutex);	//atomicity completes by unlocking the lock thus awakens agent thread
+
+	runner() function for other two smokers work identically as described above
+
+
+int main() {
+	//create 4 different threads; one for agent and the other three for smokers:
+	agent, match, tobacco, paper e.g:
+	iret_paper = pthread_create(&paper, NULL, paperRunner, NULL);
+	this will by default activate their appropriate runner() functions
+
+	//initialize each mutex of agent, match, paper, tobacco to 0 e.g: pthread_mutex_lock(&matchMutex);
+
+	//wait for each created thread to exit
+	pthread_join(agent, NULL);
+	pthread_kill(match, 0);
+	pthread_kill(paper, 0);
+	pthread_kill(tobacco, 0);
+
+	//the smoker threads are killed instead of being joined to make sure that the smoker threads do not run indefinitely forever
+		since we used indefinite while loop (while(1)) in the runner function of each smoker threads
+	return 0;
+}
+
+
+Sample Output: 
+
+Agent thread is activated. . . 
+
+Tobacco smoker goes to sleep.
+
+Match smoker goes to sleep.
+
+Paper smoker goes to sleep.
+
+agent is putting Tobacco and Matches on table now. . . 
+agent signals smoker and goes to sleep now.
+agent is putting Tobacco and Matches on table now. . . 
+agent signals smoker and goes to sleep now.
+Smoker thread with paper is smoking now. . . 
+	And awakens agent. . . 
+Paper smoker goes to sleep.
+
+agent is putting Paper and Matches on tablenow. . . 
+agent signals smoker and goes to sleep now.
+Smoker thread with paper is smoking now. . . 
+	And awakens agent. . . 
+Paper smoker goes to sleep.
+
+agent is putting Paper and Matches on tablenow. . . 
+agent signals smoker and goes to sleep now.
+Smoker thread with tobacco is smoking now. . . 
+	And awakens agent. . . 
+Tobacco smoker goes to sleep.
+
+agent is putting Tobacco and Matches on table now. . . 
+agent signals smoker and goes to sleep now.
+Smoker thread with tobacco is smoking now. . . 
+	And awakens agent. . . 
+Tobacco smoker goes to sleep.
+
+Smoker thread with paper is smoking now. . . 
+	And awakens agent. . . 
+Paper smoker goes to sleep.
+
+

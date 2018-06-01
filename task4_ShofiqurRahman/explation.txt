@@ -1,0 +1,96 @@
+//Shofiqur Rahman
+//shofi384@gmail.com
+//CCNY, Spring 2018
+
+//keep all pid of all the manager processes in an pid_t array for further processing
+	pid_t workerPid, pid[5];
+
+//This program fiest opens the file that contains student grades and reads the grades to a 2d array for further processing
+	FILE* readFile = fopen("grades.txt", "r");
+
+//Create a new file to write out the average grades for each homework
+	FILE* writeFile = fopen("avg.txt", "w+");	
+
+//Read all grades to a 2d array while making sure EOF is not faced
+//Since all child processes get a copy of the parent variables' value, this 2d array values would be available to all the 
+//subsequent managers and workers processes so they can do the calculations of avaraging
+	for(int i = 0; i<10; i++)
+		for(int j = 0; j<10; j++)
+			if(fscanf(readFile, "%d", &number) != EOF)
+				gradeArray[i][j] = number;
+
+	//close the grades.txt which have been read already and no longer needed
+	closeSuccess = fclose(readFile);
+
+//fork or create the first child process which is the first manager process
+//There will be five manager process for each chapter; all of which is created only by this parent process
+//Each of those five manager processes also have two worker processes each
+//The main calculation is done by the worker processes where each worker processes is created by only their reapective 
+//manager process
+//Each fork is ensured by if-else statement so that unintional and unnecessary processes are not created
+	pid[0] = fork();
+	if(pid[0] < 0) {	//check if the forking went wrong
+		return 1;
+	}
+	else if(pid[0] == 0) {	//if current process is the manager1 process
+		workerPid = fork(); //create worker1
+
+		if(workerPid == -1) {	//check if the forking went wrong
+			perror("worker1 fork() failure: ");
+			exit(EXIT_FAILURE);
+		}
+
+		else if(workerPid == 0) {	//if current process is the worker1
+			float total = 0;
+
+//Since all child processes get a copy of the parent variables' value, the 2d array created by the root parent is 
+//available to child process.
+//accessing the array directly, each worker process calculates the respective column's total and averages it
+			for(int i=0; i<10; i++)
+				total += gradeArray[0][i];
+
+//Each average is then written out to the file "avg.txt" so that the parent process can get the averages later
+			fseek(writeFile, 10, SEEK_SET );
+			fprintf(writeFile, "%10.2f", total/10);
+		}
+
+//if current process is the manager1 process, terminate worker1 and fork the worker2 process so that woker2 process can continue with its own calculations
+		else {
+			waitpid(workerPid, &status, 0);	//terminate worker1 process
+			workerPid = fork();	//create worker2 . . .
+
+//if the current process is still the director or root parent process, fork the second manager
+	else {
+		pid[1] = fork();
+		if(pid[1] < 0) {	//check if the forking went wrong
+			perror("Manager2 fork() failure: ");
+			return 1;
+		}... ... ...
+	
+		. . .		. . .		. . .
+		. . .		. . .		. . .
+		. . .		. . .		. . .
+
+. . . it continues this way untill all five manager processes are created and the managers themselves
+			creeated the respective worker process to find each homework average
+
+. . .	. . .	. . .
+. . .				
+//In the root parent process or the director process, terminate all the manager processes with the value in pid array
+	else {	//if the current process is still the director process
+		for(int i=0; i<5; i++) {
+			waitpid(pid[i], &status, 0);	//terminate manager processes
+			printf("\n manager %d process exited with return code %d\n", i+1, status);
+	}
+
+//Since all the managers processes have terminated, so did their respective worker process
+//all the averages have been written to "avg.txt"
+		closeSuccess = fclose(writeFile);	//close the avg.txt
+		if(closeSuccess != 0) {
+			printf("\n avg.txt fclose() failed with error [%s]\n", strerror(errno));
+			return 1;
+		}
+	}
+
+	return 0;
+}

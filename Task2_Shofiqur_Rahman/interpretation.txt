@@ -1,0 +1,36 @@
+//Shofiqur Rahman
+//shofi384@gmail.com
+//CCNY, Spring 2018
+
+
+	Initially this program runs in parent process, say P
+	In process P, int variables a, b, fq, fr, and status are initiated
+
+	Next, the first child is forked - say the first child process is Q.
+	Value returned from fork is assigned to fq
+	Q is be another process just like P. Q inherits all the state variables of P as a copy. Also Q starts running at the same place where P forked Q. So, both P and Q returns from fork and have their own processes. 
+
+	Values returned from fork is 0 to child Q and Q's pid to parent P
+		Next, if(fq == 0) {
+		that is, if child Q successfully forked and the current process is child Q
+			a = a + b;
+			And print the updated value of a, b, and the pid in the process Q only
+
+			Again, fork in process Q. fr = fork() - call it process R
+			Value returned from this fork assigned to fr
+			if(fr != 0) {
+			that is if the current process is not the second child R, but the first child Q
+				b = b + 20;
+				print the value updated value of a, b, and the pid in the process Q only
+			}
+
+			else {	//if child R successfully forked and current process is R
+				a = (a * b) + 30;
+				print the updated value of a, b, and pid in the process R only
+			}
+
+		else {	//if the current process is still the parent process P
+		b = a + b - 5;
+		print the updated a, b, and pid in the process P only
+		}	
+	terminate successfully
